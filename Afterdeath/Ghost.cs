@@ -33,9 +33,9 @@ public class SE_AfterDeath : SE_Stats
 				skathi.gameObject.SetActive(true);
 			}
 
-			foreach (TombStone tombStone in FindObjectsOfType<TombStone>())
+			foreach (TombstoneRange tombStone in FindObjectsOfType<TombstoneRange>())
 			{
-				TombstoneRange.TryAttachTombstone(tombStone);
+				tombStone.ghost = wisp.GetComponent<PlayerGhost>();
 			}
 
 			Rigidbody rigidbody = player.GetComponent<Rigidbody>();
@@ -51,10 +51,6 @@ public class SE_AfterDeath : SE_Stats
 		{
 			Utils.ClearCustomData(player);
 			ZNetScene.instance.Destroy(wisp);
-			foreach (TombstoneRange range in FindObjectsOfType<TombstoneRange>())
-			{
-				Destroy(range.gameObject);
-			}
 			player.m_lavaHeatLevel = 0;
 			player.m_lavaTimer = 1000;
 			player.GetComponent<Rigidbody>().mass = startPlayerMass;
@@ -71,13 +67,19 @@ public class SE_AfterDeath : SE_Stats
 	{
 		base.ModifyWalkVelocity(ref vel);
 		Vector3 pos = m_character.transform.position;
-		if (m_character.AboveOrInLava() && vel.y < 5 && pos.y < ZoneSystem.instance.GetGroundHeight(pos) + 3)
+		float lavaDiff = ZoneSystem.instance.GetGroundHeight(pos) + 3.5f - pos.y;
+		if (m_character.AboveOrInLava() && lavaDiff > 0)
 		{
-			vel.y = 5;
+			vel.y = Math.Max(vel.y, Mathf.Min(6, 6 * lavaDiff));
 		}
-		if (m_character.GetLiquidLevel() + 3 > pos.y && vel.y < 3 && m_character.GetLiquidLevel() > ZoneSystem.instance.GetGroundHeight(pos))
+		float waterDiff = m_character.GetLiquidLevel() + 3.5f - pos.y;
+		if (waterDiff > 0)
 		{
-			vel.y = 3;
+			float targetVel = Mathf.Min(4, 4 * waterDiff);
+			if (vel.y < targetVel && m_character.GetLiquidLevel() > ZoneSystem.instance.GetGroundHeight(pos))
+			{
+				vel.y = targetVel;
+			}
 		}
 	}
 }
@@ -86,9 +88,10 @@ public class PlayerGhost : MonoBehaviour
 {
 	private GameObject spawnVFX = null!;
 	private ZNetView netview = null!;
-	private Player? player;
+	public Player? player;
 	private readonly List<string> activeVisuals = new();
 	public float? resurrectionRemainingTime;
+	public bool carriesStone = false;
 
 	public void Awake()
 	{

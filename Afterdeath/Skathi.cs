@@ -32,6 +32,11 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 		if (Player.m_localPlayer?.GetSEMan().HaveStatusEffect(Afterdeath.ghostStatus.NameHash()) == false)
 		{
 			gameObject.SetActive(false);
+			transform.parent.Find("StoneCircle").gameObject.SetActive(true);
+		}
+		else
+		{
+			transform.parent.Find("StoneCircle").gameObject.SetActive(false);
 		}
 	}
 
