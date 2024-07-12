@@ -115,7 +115,7 @@ public class TombstoneRange : MonoBehaviour
 
 			Vector3 position = transform.position;
 			float groundHeight = ZoneSystem.instance.GetGroundHeight(ghost.transform.position);
-			if (!ghost.carriesStone && !playerInRange)
+			if (!ghost.carriesStone && !playerInRange && position.y < 3500)
 			{
 				if (inLava == null && WorldGenerator.IsAshlands(position.x, position.z))
 				{
@@ -133,7 +133,7 @@ public class TombstoneRange : MonoBehaviour
 			}
 			playerInRange = true;
 			
-			if (ZoneSystem.instance.m_waterLevel > groundHeight || ghost.player.AboveOrInLava())
+			if (position.y < 2500 && (ZoneSystem.instance.m_waterLevel > groundHeight || ghost.player.AboveOrInLava()))
 			{
 				if (carryingStone)
 				{

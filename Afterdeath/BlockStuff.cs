@@ -65,4 +65,16 @@ public static class BlockStuff
 			}
 		}
 	}
+
+	[HarmonyPatch(typeof(Character), nameof(Character.InLiquidWetDepth))]
+	private static class DisableWet
+	{
+		private static void Postfix(Character __instance, ref bool __result)
+		{
+			if (__instance is Player player && Utils.IsGhost(player))
+			{
+				__result = false;
+			}
+		}
+	}
 }

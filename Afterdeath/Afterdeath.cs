@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.1";
+	private const string ModVersion = "1.0.2";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -30,6 +30,7 @@ public class Afterdeath : BaseUnityPlugin
 	public static ConfigEntry<int> respawnTimeCap = null!;
 	private static ConfigEntry<Toggle> emptyInventorySkathiSpawn = null!;
 	private static ConfigEntry<int> wispMovementSpeedBonus = null!;
+	public static ConfigEntry<Toggle> pixieGuide = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -43,7 +44,7 @@ public class Afterdeath : BaseUnityPlugin
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, string description, bool synchronizedSetting = true) => config(group, name, value, new ConfigDescription(description), synchronizedSetting);
 
-	private enum Toggle
+	public enum Toggle
 	{
 		On = 1,
 		Off = 0,
@@ -53,6 +54,7 @@ public class Afterdeath : BaseUnityPlugin
 	public static SE_Stats ghostStatus = null!;
 	private static AssetBundle assets = null!;
 	public static GameObject WispGameObject = null!;
+	public static GameObject PixieGuideVisual = null!;
 
 	public void Awake()
 	{
@@ -76,6 +78,7 @@ public class Afterdeath : BaseUnityPlugin
 				ghost.m_speedModifier = wispMovementSpeedBonus.Value / 100f;
 			}
 		};
+		pixieGuide = config("1 - General", "Pixie Guide", Toggle.On, "If on, a pixie guide will lead you to your tombstone.", false);
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
@@ -125,6 +128,8 @@ public class Afterdeath : BaseUnityPlugin
 		ghostStatus.m_fallDamageModifier = -1f;
 		WispGameObject = assets.LoadAsset<GameObject>("VFX_AD_Ghost_Spirit");
 		WispGameObject.AddComponent<PlayerGhost>();
+
+		PixieGuideVisual = assets.LoadAsset<GameObject>("AD_Spirit_Guide");
 	}
 
 	[HarmonyPatch(typeof(ZNetScene), nameof(ZNetScene.Awake))]
@@ -134,19 +139,21 @@ public class Afterdeath : BaseUnityPlugin
 		{
 			__instance.m_prefabs.Add(WispGameObject);
 			__instance.m_prefabs.Add(assets.LoadAsset<GameObject>("AD_Respawn_End"));
+			__instance.m_prefabs.Add(PixieGuideVisual);
 		}
 	}
 
 	[HarmonyPatch(typeof(Game), nameof(Game.FindSpawnPoint))]
-	private static class MoveToSkathi
+	public static class MoveToSkathi
 	{
 		public static bool maySkipSkathi = false;
+		public static bool forceSkipSkathi = false;
 
 		private static void Prefix(Game __instance, out bool __state) => __state = __instance.m_respawnAfterDeath || !__instance.m_playerProfile.HaveLogoutPoint(); // is respawn
-		
+
 		private static void Postfix(Game __instance, ref Vector3 point, bool __state, ref bool __result)
 		{
-			if (__state && (!maySkipSkathi || emptyInventorySkathiSpawn.Value == Toggle.On) && __instance.m_playerProfile.HaveDeathPoint())
+			if (__state && !forceSkipSkathi && (!maySkipSkathi || emptyInventorySkathiSpawn.Value == Toggle.On) && __instance.m_playerProfile.HaveDeathPoint())
 			{
 				point = Utils.GetClosestLocation(__instance.GetPlayerProfile().GetDeathPoint());
 				ZNet.instance.SetReferencePosition(point);
@@ -156,7 +163,7 @@ public class Afterdeath : BaseUnityPlugin
 					point = Vector3.zero;
 				}
 			}
-			maySkipSkathi = false;
+			forceSkipSkathi = maySkipSkathi = false;
 		}
 	}
 
@@ -222,7 +229,7 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		private static readonly MethodInfo DevLog = AccessTools.DeclaredMethod(typeof(ZLog), nameof(ZLog.DevLog));
 		private static readonly MethodInfo Log = AccessTools.DeclaredMethod(typeof(ZLog), nameof(ZLog.Log));
-		
+
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
 			foreach (CodeInstruction instruction in instructions)

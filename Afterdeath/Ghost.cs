@@ -7,6 +7,7 @@ namespace Afterdeath;
 public class SE_AfterDeath : SE_Stats
 {
 	public GameObject wisp = null!;
+	private GameObject pixieTrail = null!;
 	public float startPlayerMass;
 
 	public override void Setup(Character character)
@@ -17,7 +18,7 @@ public class SE_AfterDeath : SE_Stats
 			{
 				player.m_customData["Afterdeath Death Counter"] = Utils.CurrentDay() + " " + (Utils.DeathCounter(player) + 1);
 			}
-			
+
 			player.m_customData["Afterdeath Ghost"] = "attached";
 
 			bool original = ZNetView.m_forceDisableInit;
@@ -41,6 +42,14 @@ public class SE_AfterDeath : SE_Stats
 			Rigidbody rigidbody = player.GetComponent<Rigidbody>();
 			startPlayerMass = rigidbody.mass;
 			rigidbody.mass = 0.5f;
+
+			if (Afterdeath.pixieGuide.Value == Afterdeath.Toggle.On && Game.instance.GetPlayerProfile().HaveDeathPoint())
+			{
+				pixieTrail = Instantiate(Afterdeath.PixieGuideVisual, Player.m_localPlayer.transform.position, Quaternion.identity);
+				Pixie pixie = pixieTrail.AddComponent<Pixie>();
+				pixie.player = player;
+				pixie.deathPoint = Game.instance.GetPlayerProfile().GetDeathPoint();
+			}
 		}
 		base.Setup(character);
 	}
@@ -49,8 +58,13 @@ public class SE_AfterDeath : SE_Stats
 	{
 		if (m_character is Player player)
 		{
+			player.m_ghostMode = false;
 			Utils.ClearCustomData(player);
 			ZNetScene.instance.Destroy(wisp);
+			if (pixieTrail)
+			{
+				Destroy(pixieTrail);
+			}
 			player.m_lavaHeatLevel = 0;
 			player.m_lavaTimer = 1000;
 			player.GetComponent<Rigidbody>().mass = startPlayerMass;
@@ -67,6 +81,11 @@ public class SE_AfterDeath : SE_Stats
 	{
 		base.ModifyWalkVelocity(ref vel);
 		Vector3 pos = m_character.transform.position;
+		if (pos.y > 3500)
+		{
+			return;
+		}
+
 		float lavaDiff = ZoneSystem.instance.GetGroundHeight(pos) + 3.5f - pos.y;
 		if (m_character.AboveOrInLava() && lavaDiff > 0)
 		{
@@ -112,9 +131,9 @@ public class PlayerGhost : MonoBehaviour
 	}
 
 	private void UpdatePlayerInitial()
-	{ 
+	{
 		player!.m_ghostMode = true;
-        player.GetComponent<FootStep>().enabled = false;
+		player.GetComponent<FootStep>().enabled = false;
 	}
 
 	private void UpdatePlayerVisual()

@@ -115,6 +115,7 @@
         <Compile Include="Ghost.cs"/>
         <Compile Include="BlockStuff.cs"/>
         <Compile Include="GhostWorld.cs"/>
+        <Compile Include="Pixie.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Skathi.cs"/>
         <Compile Include="Tombstone.cs"/>

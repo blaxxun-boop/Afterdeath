@@ -42,29 +42,54 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 
 	public bool Interact(Humanoid user, bool hold, bool alt)
 	{
-		UnifiedPopup.Push(new YesNoPopup("$ad_skathi_interact_title", "$ad_skathi_interact_message", () =>
+		if (alt)
 		{
-			transform.parent.Find("PlayerSpawnEffect").gameObject.SetActive(true);
-			Animator animator = GetComponent<Animator>();
-			animator.Play("cast revive");
-			IEnumerator AwaitAnimationEnd()
+			UnifiedPopup.Push(new YesNoPopup("$ad_skathi_interact_title_alt", "$ad_skathi_interact_message_alt", () =>
 			{
-				yield return new WaitForSeconds(2.8f);
-				if (user)
+				transform.parent.Find("PlayerSpawnEffect").gameObject.SetActive(true);
+				Animator animator = GetComponent<Animator>();
+				animator.Play("cast revive");
+				IEnumerator AwaitAnimationEnd()
 				{
-					user.GetSEMan().RemoveStatusEffect(Afterdeath.ghostStatus);
+					yield return new WaitForSeconds(2.8f);
+					if (user)
+					{
+						user.GetSEMan().RemoveStatusEffect(Afterdeath.ghostStatus);
+						Afterdeath.MoveToSkathi.forceSkipSkathi = true;
+						Game.instance.FindSpawnPoint(out _, out _, 0);
+						user.TeleportTo(ZNet.instance.GetReferencePosition(), Quaternion.identity, true);
+					}
 				}
-			}
-			StartCoroutine(AwaitAnimationEnd());
-			UnifiedPopup.Pop();
-		}, UnifiedPopup.Pop));
+				StartCoroutine(AwaitAnimationEnd());
+				UnifiedPopup.Pop();
+			}, UnifiedPopup.Pop));
+		}
+		else
+		{
+			UnifiedPopup.Push(new YesNoPopup("$ad_skathi_interact_title", "$ad_skathi_interact_message", () =>
+			{
+				transform.parent.Find("PlayerSpawnEffect").gameObject.SetActive(true);
+				Animator animator = GetComponent<Animator>();
+				animator.Play("cast revive");
+				IEnumerator AwaitAnimationEnd()
+				{
+					yield return new WaitForSeconds(2.8f);
+					if (user)
+					{
+						user.GetSEMan().RemoveStatusEffect(Afterdeath.ghostStatus);
+					}
+				}
+				StartCoroutine(AwaitAnimationEnd());
+				UnifiedPopup.Pop();
+			}, UnifiedPopup.Pop));
+		}
 
 		return false;
 	}
 
 	public bool UseItem(Humanoid user, ItemDrop.ItemData item) => false;
 
-	public string GetHoverText() => Localization.instance.Localize("[<color=yellow><b>$KEY_Use</b></color>] $ad_skathi_hover_text");
+	public string GetHoverText() => Localization.instance.Localize("[<color=yellow><b>$KEY_Use</b></color>] $ad_skathi_hover_text\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] $ad_skathi_hover_text_alt");
 
 	public string GetHoverName() => Localization.instance.Localize("$ad_skathi_hover_name");
 }
