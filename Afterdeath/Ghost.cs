@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 namespace Afterdeath;
@@ -10,16 +11,40 @@ public class SE_AfterDeath : SE_Stats
 	private GameObject pixieTrail = null!;
 	public float startPlayerMass;
 
+	private Vector3 spawnPoint;
+	private Vector3 deathPoint;
+
 	public override void Setup(Character character)
 	{
 		if (character is Player player)
 		{
-			if (Afterdeath.repeatedRespawnMalus.Value > 0 && player.m_customData.TryGetValue("Afterdeath Ghost", out string ghostStatus) && ghostStatus == "pending")
+			player.m_customData.TryGetValue("Afterdeath Ghost", out string ghostStatus);
+			if (Afterdeath.repeatedRespawnMalus.Value > 0 && ghostStatus == "")
 			{
 				player.m_customData["Afterdeath Death Counter"] = Utils.CurrentDay() + " " + (Utils.DeathCounter(player) + 1);
 			}
 
-			player.m_customData["Afterdeath Ghost"] = "attached";
+			Vector3 pos = player.transform.position;
+			if (string.IsNullOrEmpty(ghostStatus))
+			{
+				player.m_customData["Afterdeath Ghost"] = $"{pos.x.ToString(CultureInfo.InvariantCulture)}|{pos.y.ToString(CultureInfo.InvariantCulture)}|{pos.z.ToString(CultureInfo.InvariantCulture)}";
+				spawnPoint = pos;
+			}
+			else
+			{
+				string[] coords = ghostStatus.Split('|');
+				if (coords.Length == 3)
+				{
+					float.TryParse(coords[0], out float x);
+					float.TryParse(coords[1], out float y);
+					float.TryParse(coords[2], out float z);
+					spawnPoint = new Vector3(x, y, z);
+				}
+			}
+			if (Game.instance.GetPlayerProfile().HaveDeathPoint())
+			{
+				deathPoint = Game.instance.GetPlayerProfile().GetDeathPoint();
+			}
 
 			bool original = ZNetView.m_forceDisableInit;
 			if (player.GetComponent<ZNetView>().GetZDO() is null)
@@ -45,7 +70,7 @@ public class SE_AfterDeath : SE_Stats
 
 			if (Afterdeath.pixieGuide.Value == Afterdeath.Toggle.On && Game.instance.GetPlayerProfile().HaveDeathPoint())
 			{
-				pixieTrail = Instantiate(Afterdeath.PixieGuideVisual, Player.m_localPlayer.transform.position, Quaternion.identity);
+				pixieTrail = Instantiate(Afterdeath.PixieGuideVisual, pos, Quaternion.identity);
 				Pixie pixie = pixieTrail.AddComponent<Pixie>();
 				pixie.player = player;
 				pixie.deathPoint = Game.instance.GetPlayerProfile().GetDeathPoint();
@@ -99,6 +124,33 @@ public class SE_AfterDeath : SE_Stats
 			{
 				vel.y = targetVel;
 			}
+		}
+	}
+
+	public override void ModifySpeed(float baseSpeed, ref float speed, Character character, Vector3 dir)
+	{
+		if (Afterdeath.wanderOffProtection.Value == Afterdeath.Toggle.Off || deathPoint == Vector3.zero || spawnPoint == Vector3.zero)
+		{
+			return;
+		}
+
+		Vector3 pos = character.transform.position;
+		float totalDist = global::Utils.DistanceSqr(deathPoint with { y = 0 }, spawnPoint with { y = 0 });
+		float posCrossLine = Vector3.Dot(pos - spawnPoint, deathPoint - spawnPoint);
+		float fractionOfDistanceTraveled = Mathf.Clamp01(Mathf.Abs(posCrossLine) / totalDist);
+		Vector3 pointOnLineBetweenSpawnAndDeath = spawnPoint + fractionOfDistanceTraveled * (deathPoint - spawnPoint);
+		float dist = global::Utils.DistanceXZ(pos, pointOnLineBetweenSpawnAndDeath);
+		
+		if (dist > 50)
+		{
+			float direction = Mathf.Max(0, fractionOfDistanceTraveled switch
+			{
+				0 => Vector3.Dot(Vector3.Normalize(dir with { y = 0 }), Vector3.Normalize((pos - spawnPoint) with { y = 0 })),
+				1 => Vector3.Dot(Vector3.Normalize(dir with { y = 0 }), Vector3.Normalize((pos - deathPoint) with { y = 0 })),
+				_ => Vector3.Dot(Vector3.Normalize(dir with { y = 0 }), Vector3.Normalize((spawnPoint - deathPoint) with { y = 0 })) * Mathf.Sign(posCrossLine),
+			});
+			float speedFactor = 1 - (1 - Mathf.Max(0.1f, direction)) * Mathf.Min(1, (dist - 50) / 250);
+			speed *= speedFactor;
 		}
 	}
 }

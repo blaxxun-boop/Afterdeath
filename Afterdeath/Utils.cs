@@ -37,6 +37,8 @@ public static class Utils
 
 	public static bool IsGhost(Player player) => player.m_customData.ContainsKey("Afterdeath Ghost") && !player.IsDead();
 
+	public static bool CarriesTombstone(Player player) => (player.GetSEMan().GetStatusEffect(Afterdeath.ghostStatus.NameHash()) as SE_AfterDeath)?.wisp.GetComponent<PlayerGhost>().carriesStone == true;
+
 	public static void ClearCustomData(Player player)
 	{
 		player.m_customData.Remove("Afterdeath Ghost");

@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.2";
+	private const string ModVersion = "1.0.3";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -31,6 +31,8 @@ public class Afterdeath : BaseUnityPlugin
 	private static ConfigEntry<Toggle> emptyInventorySkathiSpawn = null!;
 	private static ConfigEntry<int> wispMovementSpeedBonus = null!;
 	public static ConfigEntry<Toggle> pixieGuide = null!;
+	public static ConfigEntry<Toggle> wanderOffProtection = null!;
+	private static ConfigEntry<SkathiPins> skathiPins = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -48,6 +50,13 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		On = 1,
 		Off = 0,
+	}
+	
+	public enum SkathiPins
+	{
+		All = 1,
+		None = 0,
+		Nearby = 2,
 	}
 
 	public static LocationManager.Location spiritHealerLocation = null!;
@@ -79,6 +88,8 @@ public class Afterdeath : BaseUnityPlugin
 			}
 		};
 		pixieGuide = config("1 - General", "Pixie Guide", Toggle.On, "If on, a pixie guide will lead you to your tombstone.", false);
+		wanderOffProtection = config("1 - General", "Wander Off Protection", Toggle.Off, new ConfigDescription("If on, players in wisp form will get their movement speed slowed by a whole lot, if they wander off too far from the area between Skathi and their tombstone. Can be used to prevent players from exploring the map as a wisp."));
+		skathiPins = config("1 - General", "Skathi Map Pins", SkathiPins.All, new ConfigDescription("All: Display all Skathis as pins on the map, while in wisp form.\nNearby: Only display Skathis that are close to the tombstone as pins on the map.\nNone: Disable all Skathi map pins."));
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
@@ -125,6 +136,7 @@ public class Afterdeath : BaseUnityPlugin
 		ghostStatus.m_jumpStaminaUseModifier = -1f;
 		ghostStatus.m_runStaminaDrainModifier = -1f;
 		ghostStatus.m_damageModifier = -1f;
+		ghostStatus.m_modifyAttackSkill = Skills.SkillType.All;
 		ghostStatus.m_fallDamageModifier = -1f;
 		WispGameObject = assets.LoadAsset<GameObject>("VFX_AD_Ghost_Spirit");
 		WispGameObject.AddComponent<PlayerGhost>();
@@ -178,7 +190,7 @@ public class Afterdeath : BaseUnityPlugin
 			}
 			else
 			{
-				__instance.m_customData["Afterdeath Ghost"] = "pending";
+				__instance.m_customData["Afterdeath Ghost"] = "";
 			}
 		}
 	}
@@ -200,7 +212,7 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		private static void Postfix(Player __instance)
 		{
-			if (!__instance.IsDead() && __instance.m_customData.TryGetValue("Afterdeath Ghost", out string state) && state == "pending")
+			if (!__instance.IsDead() && __instance.m_customData.TryGetValue("Afterdeath Ghost", out string state) && state == "")
 			{
 				Utils.ClearCustomData(__instance);
 			}
@@ -212,10 +224,16 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		private static void Postfix(Dictionary<Vector3, string> icons)
 		{
-			if (Player.m_localPlayer && !Utils.IsGhost(Player.m_localPlayer))
+			bool isNoGhost = Player.m_localPlayer && !Utils.IsGhost(Player.m_localPlayer);
+			Vector3 deathPoint = Vector3.zero;
+			if (Game.instance.GetPlayerProfile().HaveDeathPoint())
+			{
+				deathPoint = Game.instance.GetPlayerProfile().GetDeathPoint();
+			}
+			if (isNoGhost || skathiPins.Value != SkathiPins.All)
 			{
 				string name = spiritHealerLocation.location.name;
-				List<Vector3> remove = icons.Where(kv => kv.Value == name).Select(kv => kv.Key).ToList();
+				List<Vector3> remove = icons.Where(kv => kv.Value == name && (isNoGhost || skathiPins.Value == SkathiPins.None || (skathiPins.Value == SkathiPins.Nearby && deathPoint != Vector3.zero && global::Utils.DistanceXZ(deathPoint, kv.Key) > 1500))).Select(kv => kv.Key).ToList();
 				foreach (Vector3 pos in remove)
 				{
 					icons.Remove(pos);
