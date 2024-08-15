@@ -151,6 +151,11 @@ public class SE_AfterDeath : SE_Stats
 			});
 			float speedFactor = 1 - (1 - Mathf.Max(0.1f, direction)) * Mathf.Min(1, (dist - 50) / 250);
 			speed *= speedFactor;
+
+			if (speedFactor <= 0.7f)
+			{
+				Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$ad_ghost_wander_off");
+			}
 		}
 	}
 }

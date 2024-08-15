@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.3";
+	private const string ModVersion = "1.0.4";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -154,7 +154,7 @@ public class Afterdeath : BaseUnityPlugin
 			__instance.m_prefabs.Add(PixieGuideVisual);
 		}
 	}
-
+	
 	[HarmonyPatch(typeof(Game), nameof(Game.FindSpawnPoint))]
 	public static class MoveToSkathi
 	{
@@ -219,11 +219,24 @@ public class Afterdeath : BaseUnityPlugin
 		}
 	}
 
+	[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.SendLocationIcons))]
+	public static class SkipFiltering
+	{
+		public static bool skipFiltering = false;
+		private static void Prefix() => skipFiltering = true;
+		private static void Finalizer() => skipFiltering = false;
+	}
+	
 	[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.GetLocationIcons))]
 	private static class HideSkathiPins
 	{
 		private static void Postfix(Dictionary<Vector3, string> icons)
 		{
+			if (SkipFiltering.skipFiltering)
+			{
+				return;
+			}
+			
 			bool isNoGhost = Player.m_localPlayer && !Utils.IsGhost(Player.m_localPlayer);
 			Vector3 deathPoint = Vector3.zero;
 			if (Game.instance.GetPlayerProfile().HaveDeathPoint())
