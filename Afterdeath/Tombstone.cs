@@ -122,7 +122,7 @@ public class TombstoneRange : MonoBehaviour
 					ZoneSystem.instance.GetGroundData(ref position, out Vector3 _, out Heightmap.Biome _, out Heightmap.BiomeArea _, out Heightmap? hmap);
 					if (hmap)
 					{
-						inLava = Mathf.Min(1f, hmap.GetLava(position) * (1f / ghost.player.m_maxLavaMaskThreshold)) > ghost.player.m_minLavaMaskThreshold;
+						inLava = Mathf.Min(1f, hmap.GetLava(position), global::Utils.SmoothStep(0.1f, 1f, hmap.GetLava(position))) > ghost.player.m_minLavaMaskThreshold;
 					}
 				}
 
