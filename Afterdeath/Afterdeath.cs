@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.4";
+	private const string ModVersion = "1.0.5";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };

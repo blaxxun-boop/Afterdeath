@@ -41,7 +41,7 @@ public class SE_AfterDeath : SE_Stats
 					spawnPoint = new Vector3(x, y, z);
 				}
 			}
-			if (Game.instance.GetPlayerProfile().HaveDeathPoint())
+			if (Game.instance?.GetPlayerProfile().HaveDeathPoint() == true)
 			{
 				deathPoint = Game.instance.GetPlayerProfile().GetDeathPoint();
 			}
@@ -68,7 +68,7 @@ public class SE_AfterDeath : SE_Stats
 			startPlayerMass = rigidbody.mass;
 			rigidbody.mass = 0.5f;
 
-			if (Afterdeath.pixieGuide.Value == Afterdeath.Toggle.On && Game.instance.GetPlayerProfile().HaveDeathPoint())
+			if (Afterdeath.pixieGuide.Value == Afterdeath.Toggle.On && Game.instance?.GetPlayerProfile().HaveDeathPoint() == true)
 			{
 				pixieTrail = Instantiate(Afterdeath.PixieGuideVisual, pos, Quaternion.identity);
 				Pixie pixie = pixieTrail.AddComponent<Pixie>();
