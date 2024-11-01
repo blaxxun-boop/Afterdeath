@@ -1,4 +1,6 @@
-﻿using HarmonyLib;
+﻿using System.Linq;
+using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
 
 namespace Afterdeath;
@@ -209,15 +211,23 @@ public class TombstoneRange : MonoBehaviour
 		}
 	}
 
-	[HarmonyPatch(typeof(Player), nameof(Player.GetActionProgress))]
+	[HarmonyPatch]
 	private class AddCraftingAnimation
 	{
-		private static void Postfix(Player __instance, ref string name, ref float progress)
+		private static MethodInfo TargetMethod() => typeof(Player).GetMethods().Single(m => m.Name == nameof(Player.GetActionProgress) && m.GetParameters().Length == 3);
+		
+		private static void Postfix(Player __instance, ref string name, ref float progress, ref Player.MinorActionData data)
 		{
 			if (__instance.GetComponentInChildren<PlayerGhost>() is { resurrectionRemainingTime: { } remainingTime } && remainingTime < Utils.RespawnDelay())
 			{
 				progress = 1 - remainingTime / Utils.RespawnDelay();
-				name = Localization.instance.Localize("$ad_respawning");
+				name = "$ad_respawning";
+				data = new Player.MinorActionData
+				{
+					m_type = (Player.MinorActionData.ActionType)(-1),
+					m_progressText = name,
+					m_duration = 1,
+				};
 			}
 		}
 	}
