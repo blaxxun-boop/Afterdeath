@@ -46,8 +46,8 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 		{
 			return false;
 		}
-		
-		if (alt)
+
+		if (alt && Afterdeath.baseResurrection.Value == Afterdeath.Toggle.On)
 		{
 			UnifiedPopup.Push(new YesNoPopup("$ad_skathi_interact_title_alt", "$ad_skathi_interact_message_alt", () =>
 			{
@@ -69,7 +69,7 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 				UnifiedPopup.Pop();
 			}, UnifiedPopup.Pop));
 		}
-		else
+		else if (Afterdeath.skathiResurrection.Value == Afterdeath.Toggle.On)
 		{
 			UnifiedPopup.Push(new YesNoPopup("$ad_skathi_interact_title", "$ad_skathi_interact_message", () =>
 			{
@@ -94,7 +94,30 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 
 	public bool UseItem(Humanoid user, ItemDrop.ItemData item) => false;
 
-	public string GetHoverText() => Localization.instance.Localize(Utils.CarriesTombstone(Player.m_localPlayer) ? "$ad_skathi_interact_tombstone" : "[<color=yellow><b>$KEY_Use</b></color>] $ad_skathi_hover_text\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] $ad_skathi_hover_text_alt");
+	public string GetHoverText()
+	{
+		string text = "";
+		if (Utils.CarriesTombstone(Player.m_localPlayer))
+		{
+			text = "$ad_skathi_interact_tombstone";
+		}
+		else
+		{
+			if (Afterdeath.skathiResurrection.Value == Afterdeath.Toggle.On)
+			{
+				text = "[<color=yellow><b>$KEY_Use</b></color>] $ad_skathi_hover_text";
+			}
+			if (Afterdeath.baseResurrection.Value == Afterdeath.Toggle.On)
+			{
+				if (text.Length > 0)
+				{
+					text += "\n";
+				}
+				text += "[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] $ad_skathi_hover_text_alt";
+			}
+		}
+		return Localization.instance.Localize(text);
+	}
 
 	public string GetHoverName() => Localization.instance.Localize("$ad_skathi_hover_name");
 }

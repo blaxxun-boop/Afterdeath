@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.6";
+	private const string ModVersion = "1.0.7";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -33,6 +33,8 @@ public class Afterdeath : BaseUnityPlugin
 	public static ConfigEntry<Toggle> pixieGuide = null!;
 	public static ConfigEntry<Toggle> wanderOffProtection = null!;
 	private static ConfigEntry<SkathiPins> skathiPins = null!;
+	public static ConfigEntry<Toggle> skathiResurrection = null!;
+	public static ConfigEntry<Toggle> baseResurrection = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -51,8 +53,8 @@ public class Afterdeath : BaseUnityPlugin
 		On = 1,
 		Off = 0,
 	}
-	
-	public enum SkathiPins
+
+	private enum SkathiPins
 	{
 		All = 1,
 		None = 0,
@@ -90,6 +92,8 @@ public class Afterdeath : BaseUnityPlugin
 		pixieGuide = config("1 - General", "Pixie Guide", Toggle.On, "If on, a pixie guide will lead you to your tombstone.", false);
 		wanderOffProtection = config("1 - General", "Wander Off Protection", Toggle.Off, new ConfigDescription("If on, players in wisp form will get their movement speed slowed by a whole lot, if they wander off too far from the area between Skathi and their tombstone. Can be used to prevent players from exploring the map as a wisp."));
 		skathiPins = config("1 - General", "Skathi Map Pins", SkathiPins.All, new ConfigDescription("All: Display all Skathis as pins on the map, while in wisp form.\nNearby: Only display Skathis that are close to the tombstone as pins on the map.\nNone: Disable all Skathi map pins."));
+		skathiResurrection = config("1 - General", "Skathi Resurrection", Toggle.On, new ConfigDescription("If off, players will be unable to resurrection at Skathi."));
+		baseResurrection = config("1 - General", "Base Resurrection", Toggle.On, new ConfigDescription("If off, players will be unable to resurrection at their bed."));
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
