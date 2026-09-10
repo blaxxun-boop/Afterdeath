@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.8";
+	private const string ModVersion = "1.0.9";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -66,6 +66,7 @@ public class Afterdeath : BaseUnityPlugin
 	private static AssetBundle assets = null!;
 	public static GameObject WispGameObject = null!;
 	public static GameObject PixieGuideVisual = null!;
+	public static GameObject locationContainer = null!;
 
 	public void Awake()
 	{
@@ -122,13 +123,20 @@ public class Afterdeath : BaseUnityPlugin
 		spiritHealerLocation.location.transform.Find("PlayerSpawn").gameObject.AddComponent<PlayerSpawn>();
 		spiritHealerLocation.location.transform.Find("Skathi").gameObject.AddComponent<Skathi>();
 		SetLocationAttributes(spiritHealerLocation);
-
-		LocationManager.Location outerAshlands = new(spiritHealerLocation.location);
+		
+		locationContainer = new GameObject("AfterDeath Locations");
+		locationContainer.SetActive(false);
+		DontDestroyOnLoad(locationContainer);
+		Location dupSpritHealer() => Instantiate(spiritHealerLocation.location.gameObject, locationContainer.transform).GetComponent<Location>();
+		
+		LocationManager.Location outerAshlands = new(dupSpritHealer());
+		outerAshlands.location.name += "_Ashlands_Outer";
 		SetLocationAttributes(outerAshlands);
 		outerAshlands.Biome = Heightmap.Biome.AshLands;
 		outerAshlands.SpawnArea = Heightmap.BiomeArea.Edge;
 		outerAshlands.Count = 280;
-		LocationManager.Location innerAshlands = new(spiritHealerLocation.location);
+		LocationManager.Location innerAshlands = new(dupSpritHealer());
+		outerAshlands.location.name += "_Ashlands_Inner";
 		SetLocationAttributes(innerAshlands);
 		innerAshlands.Biome = Heightmap.Biome.AshLands;
 		innerAshlands.SpawnArea = Heightmap.BiomeArea.Median;

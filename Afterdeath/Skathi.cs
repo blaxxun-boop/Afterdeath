@@ -120,4 +120,5 @@ public class Skathi : MonoBehaviour, Interactable, Hoverable
 	}
 
 	public string GetHoverName() => Localization.instance.Localize("$ad_skathi_hover_name");
+	public float GetHoverOffset() => 0;
 }

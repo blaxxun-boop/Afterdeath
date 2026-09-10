@@ -25,12 +25,12 @@ public class TombstoneRange : MonoBehaviour
 		netview = GetComponent<ZNetView>();
 		syncTransform = GetComponent<ZSyncTransform>();
 		
-		netview.Unregister("OpenRespons");
-		netview.Register<bool>("OpenRespons", (uid, success) =>
+		netview.Unregister("RPC_OpenResponse");
+		netview.Register<bool>("RPC_OpenResponse", (uid, success) =>
 		{
 			if (!ghost)
 			{
-				GetComponent<Container>().RPC_OpenRespons(uid, success);
+				GetComponent<Container>().RPC_OpenResponse(uid, success);
 				return;
 			}
 			if (success)
@@ -130,7 +130,7 @@ public class TombstoneRange : MonoBehaviour
 
 				if ((ZoneSystem.instance.m_waterLevel > groundHeight && tombStone.GetComponent<Floating>().GetFloatDepth() < 0) || (ghost.player.AboveOrInLava() && inLava == true))
 				{
-					tombStone.m_nview.InvokeRPC("RequestOpen", Game.instance.GetPlayerProfile().GetPlayerID());
+					tombStone.m_nview.InvokeRPC("RPC_RequestOpen", Game.instance.GetPlayerProfile().GetPlayerID());
 				}
 			}
 			playerInRange = true;
