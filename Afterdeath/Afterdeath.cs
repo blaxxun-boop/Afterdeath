@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.9";
+	private const string ModVersion = "1.0.10";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -127,8 +127,13 @@ public class Afterdeath : BaseUnityPlugin
 		locationContainer = new GameObject("AfterDeath Locations");
 		locationContainer.SetActive(false);
 		DontDestroyOnLoad(locationContainer);
-		Location dupSpritHealer() => Instantiate(spiritHealerLocation.location.gameObject, locationContainer.transform).GetComponent<Location>();
-		
+		Location dupSpritHealer()
+		{
+			Location loc = Instantiate(spiritHealerLocation.location.gameObject, locationContainer.transform).GetComponent<Location>();
+			loc.name = loc.name.Replace("(Clone)", "");
+			return loc;
+		}
+
 		LocationManager.Location outerAshlands = new(dupSpritHealer());
 		outerAshlands.location.name += "_Ashlands_Outer";
 		SetLocationAttributes(outerAshlands);
@@ -136,7 +141,7 @@ public class Afterdeath : BaseUnityPlugin
 		outerAshlands.SpawnArea = Heightmap.BiomeArea.Edge;
 		outerAshlands.Count = 280;
 		LocationManager.Location innerAshlands = new(dupSpritHealer());
-		outerAshlands.location.name += "_Ashlands_Inner";
+		innerAshlands.location.name += "_Ashlands_Inner";
 		SetLocationAttributes(innerAshlands);
 		innerAshlands.Biome = Heightmap.Biome.AshLands;
 		innerAshlands.SpawnArea = Heightmap.BiomeArea.Median;
@@ -244,7 +249,7 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		private static void Postfix(Dictionary<Vector3, string> icons)
 		{
-			if (SkipFiltering.skipFiltering)
+			if (SkipFiltering.skipFiltering) 
 			{
 				return;
 			}
@@ -258,7 +263,7 @@ public class Afterdeath : BaseUnityPlugin
 			if (isNoGhost || skathiPins.Value != SkathiPins.All)
 			{
 				string name = spiritHealerLocation.location.name;
-				List<Vector3> remove = icons.Where(kv => kv.Value == name && (isNoGhost || skathiPins.Value == SkathiPins.None || (skathiPins.Value == SkathiPins.Nearby && deathPoint != Vector3.zero && global::Utils.DistanceXZ(deathPoint, kv.Key) > 1500))).Select(kv => kv.Key).ToList();
+				List<Vector3> remove = icons.Where(kv => (kv.Value == name || kv.Value == name + "_Ashlands_Outer" || kv.Value == name + "_Ashlands_Inner") && (isNoGhost || skathiPins.Value == SkathiPins.None || (skathiPins.Value == SkathiPins.Nearby && deathPoint != Vector3.zero && global::Utils.DistanceXZ(deathPoint, kv.Key) > 1500))).Select(kv => kv.Key).ToList();
 				foreach (Vector3 pos in remove)
 				{
 					icons.Remove(pos);

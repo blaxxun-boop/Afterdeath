@@ -165,7 +165,7 @@ public class PlayerGhost : MonoBehaviour
 	private GameObject spawnVFX = null!;
 	private ZNetView netview = null!;
 	public Player? player;
-	private readonly List<string> activeVisuals = new();
+	private readonly HashSet<string> activeVisuals = new();
 	public float? resurrectionRemainingTime;
 	public bool carriesStone = false;
 
@@ -212,7 +212,10 @@ public class PlayerGhost : MonoBehaviour
 			if (visual.activeSelf)
 			{
 				visual.SetActive(false);
-				activeVisuals.Add(visual.name);
+				while (!activeVisuals.Add(visual.name))
+				{
+					visual.name += "-";
+				}
 			}
 		}
 	}
