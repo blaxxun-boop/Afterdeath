@@ -26,11 +26,11 @@ public static class Utils
 		IEnumerable<Vector3> locations;
 		if (ZNet.instance.IsServer())
 		{
-			locations = ZoneSystem.instance.m_locationInstances.Values.Where(i => i.m_location.m_prefabName == Afterdeath.spiritHealerLocation.location.name).Select(i => i.m_position);
+			locations = ZoneSystem.instance.m_locationInstances.Values.Where(i => i.m_location.m_prefabName.StartsWith(Afterdeath.spiritHealerLocation.location.name, StringComparison.Ordinal)).Select(i => i.m_position);
 		}
 		else
 		{
-			locations = ZoneSystem.instance.m_locationIcons.Where(kv => kv.Value == Afterdeath.spiritHealerLocation.location.name).Select(kv => kv.Key);
+			locations = ZoneSystem.instance.m_locationIcons.Where(kv => kv.Value.StartsWith(Afterdeath.spiritHealerLocation.location.name, StringComparison.Ordinal)).Select(kv => kv.Key);
 		}
 		return locations.OrderBy(p => global::Utils.DistanceXZ(p, position)).FirstOrDefault();
 	}

@@ -18,7 +18,7 @@ namespace Afterdeath;
 public class Afterdeath : BaseUnityPlugin
 {
 	private const string ModName = "Afterdeath";
-	private const string ModVersion = "1.0.10";
+	private const string ModVersion = "1.0.11";
 	private const string ModGUID = "org.bepinex.plugins.afterdeath";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -35,6 +35,7 @@ public class Afterdeath : BaseUnityPlugin
 	private static ConfigEntry<SkathiPins> skathiPins = null!;
 	public static ConfigEntry<Toggle> skathiResurrection = null!;
 	public static ConfigEntry<Toggle> baseResurrection = null!;
+	public static ConfigEntry<Toggle> tombstoneHack = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -95,6 +96,7 @@ public class Afterdeath : BaseUnityPlugin
 		skathiPins = config("1 - General", "Skathi Map Pins", SkathiPins.All, new ConfigDescription("All: Display all Skathis as pins on the map, while in wisp form.\nNearby: Only display Skathis that are close to the tombstone as pins on the map.\nNone: Disable all Skathi map pins."));
 		skathiResurrection = config("1 - General", "Skathi Resurrection", Toggle.On, new ConfigDescription("If off, players will be unable to resurrection at Skathi."));
 		baseResurrection = config("1 - General", "Base Resurrection", Toggle.On, new ConfigDescription("If off, players will be unable to resurrection at their bed."));
+		tombstoneHack = config("1 - General", "Always Create Tombstone", Toggle.On, new ConfigDescription("If on, a Wood will be added to the player inventory, if the player dies with an empty inventory, to force the creation of a tombstone."));
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
@@ -201,12 +203,16 @@ public class Afterdeath : BaseUnityPlugin
 	{
 		private static void Prefix(Player __instance)
 		{
-			if (__instance.m_inventory.NrOfItems() == 0)
+			if (__instance.m_inventory.NrOfItems() == 0 && tombstoneHack.Value == Toggle.Off)
 			{
 				MoveToSkathi.maySkipSkathi = true;
 			}
 			else
 			{
+				if (__instance.m_inventory.NrOfItems() == 0)
+				{
+					__instance.m_inventory.AddItem(ObjectDB.instance.GetItemPrefab("Wood"), 1);
+				}
 				__instance.m_customData["Afterdeath Ghost"] = "";
 			}
 		}
