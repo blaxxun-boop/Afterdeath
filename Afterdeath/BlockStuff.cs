@@ -59,7 +59,7 @@ public static class BlockStuff
 	{
 		private static void Postfix(Player __instance, ref GameObject? hover)
 		{
-			if (Utils.IsGhost(__instance) && hover is not null && global::Utils.GetPrefabName(hover) != "Skathi")
+			if (Utils.IsGhost(__instance) && hover is not null && global::Utils.GetPrefabName(hover) != "Skathi" && hover.GetComponentInParent<Teleport>() is null)
 			{
 				hover = null;
 			}

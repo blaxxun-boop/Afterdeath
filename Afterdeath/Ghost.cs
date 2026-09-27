@@ -158,6 +158,12 @@ public class SE_AfterDeath : SE_Stats
 			}
 		}
 	}
+	
+	public override void UpdateStatusEffect(float dt)
+	{
+		m_character.m_iceShoes = true;
+		base.UpdateStatusEffect(dt);
+	}
 }
 
 public class PlayerGhost : MonoBehaviour

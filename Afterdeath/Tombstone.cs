@@ -128,7 +128,7 @@ public class TombstoneRange : MonoBehaviour
 					}
 				}
 
-				if ((ZoneSystem.instance.m_waterLevel > groundHeight && tombStone.GetComponent<Floating>().GetFloatDepth() < 0) || (ghost.player.AboveOrInLava() && inLava == true))
+				if ((ZoneSystem.instance.m_waterLevel > groundHeight && (tombStone.GetComponent<Floating>().GetFloatDepth() < 0 || (Physics.Raycast(tombStone.transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hitInfo, 1, Character.s_slipperyStuffMask) && hitInfo.collider.material.dynamicFriction <= 0))) || (ghost.player.AboveOrInLava() && inLava == true))
 				{
 					tombStone.m_nview.InvokeRPC("RPC_RequestOpen", Game.instance.GetPlayerProfile().GetPlayerID());
 				}
