@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -174,11 +175,41 @@ public class Afterdeath : BaseUnityPlugin
 		}
 	}
 	
+	// Valheim generates the locations of a world exactly once, so a world that already existed before this mod was installed never receives any
+	// Skathi. Request a regeneration in that case, which is the same thing the genloc console command does. Already placed locations are kept.
+	[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.GenerateLocationsIfNeeded))]
+	private static class GenerateMissingSkathiLocations
+	{
+		private static void Prefix(ZoneSystem __instance)
+		{
+			if (__instance.m_locationsGenerated && spiritHealerLocation.CanSpawn && spiritHealerLocation.Count > 0 && !__instance.m_locationInstances.Values.Any(i => i.m_location.m_prefabName.StartsWith(spiritHealerLocation.location.name, StringComparison.Ordinal)))
+			{
+				Debug.LogWarning("[Afterdeath] This world does not contain any Skathi locations, regenerating the locations of the world.");
+				__instance.m_locationsGenerated = false;
+			}
+		}
+	}
+
+	// Clients receive the location icons only once, while they connect, and those icons are the only thing a client knows about the position of a
+	// Skathi. Send them again, whenever locations have been generated, so already connected players don't have to reconnect after a genloc.
+	[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.LocationsGenerated), MethodType.Setter)]
+	private static class ResendLocationIcons
+	{
+		private static void Postfix(ZoneSystem __instance, bool value)
+		{
+			if (value && ZNet.instance?.IsServer() == true)
+			{
+				__instance.SendLocationIcons(ZRoutedRpc.Everybody);
+			}
+		}
+	}
+
 	[HarmonyPatch(typeof(Game), nameof(Game.FindSpawnPoint))]
 	public static class MoveToSkathi
 	{
 		public static bool maySkipSkathi = false;
 		public static bool forceSkipSkathi = false;
+		private static bool warnedAboutMissingSkathi = false;
 
 		private static void Prefix(Game __instance, out bool __state) => __state = __instance.m_respawnAfterDeath || !__instance.m_playerProfile.HaveLogoutPoint(); // is respawn
 
@@ -186,7 +217,18 @@ public class Afterdeath : BaseUnityPlugin
 		{
 			if (__state && !forceSkipSkathi && (!maySkipSkathi || emptyInventorySkathiSpawn.Value == Toggle.On) && __instance.m_playerProfile.HaveDeathPoint())
 			{
-				point = Utils.GetClosestLocation(__instance.GetPlayerProfile().GetDeathPoint());
+				// no known Skathi (e.g. the world was generated before the mod was installed): keep the vanilla spawn point, instead of dropping the player at 0/0/0
+				if (Utils.GetClosestLocation(__instance.GetPlayerProfile().GetDeathPoint()) is not { } skathi)
+				{
+					if (!warnedAboutMissingSkathi)
+					{
+						warnedAboutMissingSkathi = true;
+						Debug.LogWarning("[Afterdeath] No Skathi location known, falling back to the default spawn point. The server sends its location icons only once, while you connect: if the Skathis have been generated after that, reconnect to receive them.");
+					}
+					forceSkipSkathi = maySkipSkathi = false;
+					return;
+				}
+				point = skathi;
 				ZNet.instance.SetReferencePosition(point);
 				__result = ZNetScene.instance.IsAreaReady(point);
 				if (!__result)
