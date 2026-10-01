@@ -21,7 +21,8 @@ public static class Utils
 		return ownSE;
 	}
 
-	public static Vector3 GetClosestLocation(Vector3 position)
+	// null, if the world (or, on a client, the location icon list received from the server) doesn't contain any Skathi
+	public static Vector3? GetClosestLocation(Vector3 position)
 	{
 		IEnumerable<Vector3> locations;
 		if (ZNet.instance.IsServer())
@@ -32,7 +33,7 @@ public static class Utils
 		{
 			locations = ZoneSystem.instance.m_locationIcons.Where(kv => kv.Value.StartsWith(Afterdeath.spiritHealerLocation.location.name, StringComparison.Ordinal)).Select(kv => kv.Key);
 		}
-		return locations.OrderBy(p => global::Utils.DistanceXZ(p, position)).FirstOrDefault();
+		return locations.OrderBy(p => global::Utils.DistanceXZ(p, position)).Select(p => (Vector3?)p).FirstOrDefault();
 	}
 
 	public static bool IsGhost(Player player) => player.m_customData.ContainsKey("Afterdeath Ghost") && !player.IsDead();
