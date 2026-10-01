@@ -35,9 +35,11 @@ public class SE_AfterDeath : SE_Stats
 				string[] coords = ghostStatus.Split('|');
 				if (coords.Length == 3)
 				{
-					float.TryParse(coords[0], out float x);
-					float.TryParse(coords[1], out float y);
-					float.TryParse(coords[2], out float z);
+					// the coordinates are written with InvariantCulture, so they have to be read back with it: on a locale that uses a comma as
+					// decimal separator the parse fails silently, the spawn point stays at 0/0/0 and the wander off protection stops working
+					float.TryParse(coords[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x);
+					float.TryParse(coords[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y);
+					float.TryParse(coords[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z);
 					spawnPoint = new Vector3(x, y, z);
 				}
 			}
@@ -136,8 +138,11 @@ public class SE_AfterDeath : SE_Stats
 
 		Vector3 pos = character.transform.position;
 		float totalDist = global::Utils.DistanceSqr(deathPoint with { y = 0 }, spawnPoint with { y = 0 });
-		float posCrossLine = Vector3.Dot(pos - spawnPoint, deathPoint - spawnPoint);
-		float fractionOfDistanceTraveled = Mathf.Clamp01(Mathf.Abs(posCrossLine) / totalDist);
+		// totalDist is a XZ distance, so the height has to be dropped here as well: the death point of a dungeon death sits 5000 m above the surface
+		// (Location.m_hasInterior), which makes the height dominate the dot product, snaps the projection onto the death point and slows the player
+		// down while they are still standing on the spawn platform. Without the Abs, walking backwards past the spawn point clamps to 0, as intended.
+		float posCrossLine = Vector3.Dot((pos - spawnPoint) with { y = 0 }, (deathPoint - spawnPoint) with { y = 0 });
+		float fractionOfDistanceTraveled = Mathf.Clamp01(posCrossLine / totalDist);
 		Vector3 pointOnLineBetweenSpawnAndDeath = spawnPoint + fractionOfDistanceTraveled * (deathPoint - spawnPoint);
 		float dist = global::Utils.DistanceXZ(pos, pointOnLineBetweenSpawnAndDeath);
 		
